@@ -8,10 +8,8 @@
 #include "setup_ui.h"
 
 extern const int map_width, map_height;
-extern mine_cell map[MAP_WIDTH][MAP_HEIGHT];
+extern mine_cell map[MAP_WIDTH][MAP_HEIGHT]; // TODO: refactor to dynamic array!
 extern int mines;
-
-game_settings settings;
 
 // MARK: - Func to show mines count
 
@@ -19,7 +17,7 @@ void show_mines_count(int a) {
     glLineWidth(3);
     glColor3f(1, 1, 0);
     glBegin(GL_LINES);
-    // работает по принципу семисегментного индикатора
+    
     if ((a != 1) && (a != 4)) {
         glVertex2f(0.3, 0.85);
         glVertex2f(0.7, 0.85);
@@ -67,7 +65,7 @@ void draw_mine(void) {
 
 // MARK: - Draw a flag
 
-void draw_flag(void) {
+void draw_flag(void) { // TODO: - Oleg
     glBegin(GL_TRIANGLES);
     glColor3f(1, 0, 0);
     glVertex2f(0.25, 0.75);
@@ -113,24 +111,37 @@ void draw_open_gamefield(void) {
 // MARK: - Get mouse click to open a cell
 
 void touch_to_open_cell(int button, int state, int x, int y) {
+    // Convert mouse coordinates to cell coordinates (assuming each cell is 10x10 pixels)
+    int cell_x = x / (float)glutGet(GLUT_WINDOW_WIDTH) * MAP_WIDTH;
+    int cell_y = MAP_HEIGHT - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * MAP_HEIGHT; // Invert y-coordinate because OpenGL origin is at bottom-left
+    
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        // Convert mouse coordinates to cell coordinates (assuming each cell is 10x10 pixels)
-        int cell_x = x / (float)glutGet(GLUT_WINDOW_WIDTH) * MAP_WIDTH;
-        int cell_y = MAP_HEIGHT - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * MAP_HEIGHT; // Invert y-coordinate because OpenGL origin is at bottom-left
         
         if (cell_in_map(cell_x, cell_y)) {
-            map[cell_x][cell_y].open = true;
-            if (map[cell_x][cell_y].mine == true) {
-                printf("YOU ARE A LOSER!!!\n");
-                exit(0);
+            if (map[cell_x][cell_y].flag == false) {
+                map[cell_x][cell_y].open = true;
+                if (map[cell_x][cell_y].mine == true) {
+                    printf("YOU ARE A LOSER!!!\n");
+                }
             }
         }
-        
         // Print out the cell coordinates
-        printf("Clicked on cell (%d, %d)\n", cell_x, cell_y);
-        
-        glutPostRedisplay(); // request for refresh screen
+        printf("Clicked left button on cell (%d, %d)\n", cell_x, cell_y);
+       
+    } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        if (cell_in_map(cell_x, cell_y)) { // TODO: - need to create clean flag
+            if (map[cell_x][cell_y].open == false) {
+                if (map[cell_x][cell_y].flag == true) {
+                    map[cell_x][cell_y].flag = false;
+                } else {
+                    map[cell_x][cell_y].flag = true;
+                }
+            }
+        }
+        // Print out the cell coordinates
+        printf("Clicked right button on cell (%d, %d)\n", cell_x, cell_y);
     }
+    glutPostRedisplay(); // request for refresh screen
 }
 
 // MARK: - Open a cell
@@ -159,6 +170,11 @@ void show_game(void) {
                 }
             } else {
                 draw_gamefield();
+                if (map[i][j].flag == true) {
+                    draw_flag();
+                } else {
+                    draw_gamefield();
+                }
             }
             glPopMatrix();
         }
@@ -213,7 +229,46 @@ void create_menu(void) {
     glutAddMenuEntry("Continue Game", 2);
     glutAddMenuEntry("Records", 3);
     glutAddMenuEntry("Exit", 4);
-    glutAttachMenu(GLUT_RIGHT_BUTTON);
+    glutAttachMenu(GLUT_MIDDLE_BUTTON); //  TODO: refactor to middle or escape
+}
+
+// MARK: - Setup settings
+
+game_settings setup_settings(game_difficult difficult) {
+    game_settings settings;
+    
+    switch (difficult) { // TODO: Need to create how to resize map size
+        case EASY:
+            settings.parameters.width = 400;
+            settings.parameters.height = 300;
+//             map_width = 10;
+//             map_height = 10;
+            settings.parameters.mines = 10;
+            break;
+        case MEDIUM:
+            settings.parameters.width = 600;
+            settings.parameters.height = 400;
+            settings.parameters.mines = 20;
+//            map_width = 20;
+//            map_height = 20;
+            break;
+        case HARD:
+            settings.parameters.width = 800;
+            settings.parameters.height = 600;
+            settings.parameters.mines = 30;
+//            map_width = 30;
+//            map_height = 30;
+            break;
+        case HARDCORE:
+            settings.parameters.width = 1000;
+            settings.parameters.height = 800;
+            settings.parameters.mines = 100;
+//            map_width = 100;
+//            map_height = 100;
+            break;
+    }
+    
+    return settings;
 }
 
 
@@ -223,32 +278,10 @@ void create_window(void) {
     
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     
-    settings.difficult = HARD;
+    game_difficult difficult = HARD;
+
+    game_settings settings = setup_settings(difficult);
     
-    switch (settings.difficult) { // TODO: Need to create how to resize map size
-        case EASY:
-            settings.parameters.width = 400;
-            settings.parameters.height = 300;
-            // map_width = 10;
-            // map_height = 10;
-            settings.parameters.mines = 10;
-            break;
-        case MEDIUM:
-            settings.parameters.width = 600;
-            settings.parameters.height = 400;
-            settings.parameters.mines = 20;
-            break;
-        case HARD:
-            settings.parameters.width = 800;
-            settings.parameters.height = 600;
-            settings.parameters.mines = 30;
-            break;
-        case HARDCORE:
-            settings.parameters.width = 1000;
-            settings.parameters.height = 800;
-            settings.parameters.mines = 100;
-            break;
-    }
     glutInitWindowSize(settings.parameters.width, settings.parameters.height); //TODO: change to game_size in future
     glutInitWindowPosition(325, 150);
     glutCreateWindow("MINESWEEPER GAME");
