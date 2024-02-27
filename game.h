@@ -38,7 +38,6 @@ typedef enum {
 // MARK: - Game settings
 
 typedef struct {
-    game_difficult difficult;
     union {
         struct {
             int width;

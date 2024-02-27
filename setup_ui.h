@@ -21,7 +21,7 @@
 // Local files
 #include "game.h"
 
-// MARK: - Создание интерфейса
+// MARK: - Interface functions
 
 void show_mines_count(int);
 void draw_mine(void);
@@ -31,11 +31,18 @@ void show_game(void);
 void touch_to_open_cell(int, int, int, int);
 void opening_cells(void);
 
+// MARK: - Logic
+
+game_settings setup_settings(game_difficult);
+
+// MARK: - Screen functions
+
 void display(void);
 void reshape(int, int);
 
 void menu(int);
 void create_menu(void);
+void show_menu(char);
 void create_window(void);
 
 #endif /* setup_ui_h */
