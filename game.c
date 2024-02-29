@@ -7,31 +7,51 @@
 
 #include "game.h"
 
-const int map_height = MAP_HEIGHT;
-const int map_width = MAP_WIDTH;// TODO: change from game difficult
+extern game_settings settings;
 
-mine_cell map[map_height][map_width];
-int mines, closed_cells;
+int closed_cells;
+mine_cell **map_matrix;
 
-void new_game(void) {
+void setup_matrix(void) {
+    int map_row = settings.parameters.map_row;
+    int map_column = settings.parameters.map_column;
+
+    map_matrix = (mine_cell**)malloc(map_row * sizeof(mine_cell*));
+
+    for (int i = 0; i < map_row; i++) {
+        map_matrix[i] = (mine_cell*)malloc(map_column * sizeof(mine_cell));
+    }
     
-    memset(map, 0, sizeof(map));
-    mines = 20;
-    closed_cells = map_height * map_width;
+    for (int i = 0; i < map_row; i++) {
+        for (int j = 0; j < map_column; j++) {
+            map_matrix[i][j].mine = false;
+            map_matrix[i][j].flag = false;
+            map_matrix[i][j].count_near_mines = 0;
+            map_matrix[i][j].open = false;
+        }
+    }
+    new_game_matrix();
+}
+
+void new_game_matrix(void) {
+    int map_row = settings.parameters.map_row;
+    int map_column = settings.parameters.map_column;
     
-    for (int i = 0; i < mines; i++) {
-        int x = rand() % map_width; //TODO: refactor this logic, because mines not changed
-        int y = rand() % map_height;
+    closed_cells = map_row * map_column;
+    
+    for (int i = 0; i < settings.parameters.mines; i++) {
+        int x = rand() % map_row; //TODO: refactor this logic, because mines not changed
+        int y = rand() % map_column;
         
-        if (map[x][y].mine) {
+        if (map_matrix[x][y].mine) {
             i--;
         } else {
-            map[x][y].mine = true; // установка мины
+            map_matrix[x][y].mine = true; // установка мины
             
             for (int dx = -1; dx < 2; dx++) {
                 for (int dy = -1; dy < 2; dy++) {
                     if (cell_in_map(x + dx, y + dy)) {
-                        map[x + dx][y + dy].count_near_mines += 1;
+                        map_matrix[x + dx][y + dy].count_near_mines += 1;
                     }
                 }
             }
@@ -40,5 +60,5 @@ void new_game(void) {
 }
 
 bool cell_in_map(int x, int y) {
-    return (x >= 0) && (y >= 0) && (x < map_width) && (y < map_height);
+    return (x >= 0) && (y >= 0) && (x < settings.parameters.map_row) && (y < settings.parameters.map_column);
 }

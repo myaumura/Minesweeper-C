@@ -14,10 +14,7 @@
 #include <math.h>
 #include <stdbool.h>
 
-#define MAP_HEIGHT 10
-#define MAP_WIDTH 10
-
-// MARK: - struct Mine Cell
+// MARK: - Mine Cell struct
 
 typedef struct {
     bool mine;
@@ -42,6 +39,8 @@ typedef struct {
         struct {
             int width;
             int height;
+            int map_row;
+            int map_column;
             int mines;
         } parameters;
     };
@@ -49,5 +48,7 @@ typedef struct {
 
 void new_game(void);
 bool cell_in_map(int x, int y);
+void setup_matrix(void);
+void new_game_matrix(void);
 
 #endif /* game_h */
