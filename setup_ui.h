@@ -41,6 +41,7 @@ void display(void);
 void reshape(int, int);
 
 void menu(int);
+void sub_menu(int);
 void create_menu(void);
 void show_menu(char);
 void create_window(void);

@@ -38,6 +38,7 @@ void new_game_matrix(void) {
     int map_column = settings.parameters.map_column;
     
     closed_cells = map_row * map_column;
+    srand(time(NULL));
     
     for (int i = 0; i < settings.parameters.mines; i++) {
         int x = rand() % map_row; //TODO: refactor this logic, because mines not changed

@@ -9,6 +9,9 @@
 
 extern mine_cell **map_matrix;
 game_settings settings;
+game_difficult difficult;
+
+bool new_game_tapped = false;
 
 // MARK: - Func to show mines count
 
@@ -129,7 +132,7 @@ void touch_to_open_cell(int button, int state, int x, int y) {
         // Print out the cell coordinates
         printf("Clicked left button on cell (%d, %d)\n", cell_x, cell_y);
        
-    } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+    } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
         if (cell_in_map(cell_x, cell_y)) { // TODO: - need to create clean flag
             if (map_matrix[cell_x][cell_y].open == false) {
                 if (map_matrix[cell_x][cell_y].flag == true) {
@@ -189,9 +192,14 @@ void show_game(void) {
 void display(void) {
     glClearColor(0.07f, 0.13f, 0.17f, 0.0f); // set background color
     glClear(GL_COLOR_BUFFER_BIT); //clear that color
-    show_game();
     glFlush();
-    glutSwapBuffers();
+    
+    if (new_game_tapped == true) {
+        show_game();
+        glFlush();
+        glutSwapBuffers();
+    }
+    
 }
     
 // MARK: - Resize window
@@ -205,18 +213,14 @@ void reshape(int width, int height) {
 void menu(int value) {
     switch (value) {
         case 1:
-            printf("Start button tapped\n");
-            glColor3f(1.0, 1.0, 1.0);
-            break;
-        case 2:
             printf("Continue button tapped\n");
             glColor3f(0.0, 1.0, 0.0);
             break;
-        case 3:
+        case 2:
             printf("Records button tapped\n");
             glColor3f(0.0, 0.0, 1.0);
             break;
-        case 4:
+        case 3:
             printf("Exit button tapped\n");
             exit(0);
             break;
@@ -224,15 +228,58 @@ void menu(int value) {
     glutPostRedisplay();
 }
 
+void sub_menu(int value) {
+    switch (value) {
+        case 0:
+            difficult = EASY;
+            printf("EASY\n");
+            break;
+        case 1:
+            difficult = MEDIUM;
+            printf("MEDIUM\n");
+            break;
+        case 2:
+            difficult = HARD;
+            printf("HARD\n");
+            break;
+        case 3:
+            difficult = HARDCORE;
+            printf("HARDCORE\n");
+            break;
+    }
+    game_settings settings = setup_settings(difficult);
+    
+    // Изменение размеров окна
+    glutReshapeWindow(settings.parameters.width, settings.parameters.height);
+    
+    setup_matrix();
+    
+    new_game_tapped = true;
+    printf("New Game button tapped\n");
+
+    glutPostRedisplay();
+}
+
+
 // MARK: - Create menu
 
 void create_menu(void) {
+    
+    // setting for sub menu
+    int sub = glutCreateMenu(sub_menu);
+    glutAddMenuEntry("Easy", 0);
+    glutAddMenuEntry("Medium", 1);
+    glutAddMenuEntry("Hard", 2);
+    glutAddMenuEntry("Hardcore", 3);
+    glutCreateMenu(sub_menu);
+    
+    // main menu
     glutCreateMenu(menu);
-    glutAddMenuEntry("New Game", 1);
-    glutAddMenuEntry("Continue Game", 2);
-    glutAddMenuEntry("Records", 3);
-    glutAddMenuEntry("Exit", 4);
-    glutAttachMenu(GLUT_MIDDLE_BUTTON); //  TODO: refactor to middle or escape
+    glutAddSubMenu("New Game", sub);
+    glutAddMenuEntry("Continue Game", 5);
+    glutAddMenuEntry("Records", 6);
+    glutAddMenuEntry("Exit", 7);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
 // MARK: - Setup settings
@@ -279,10 +326,9 @@ void create_window(void) {
     
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     
-    game_difficult difficult = EASY;
     settings = setup_settings(difficult);
     
-    glutInitWindowSize(settings.parameters.width, settings.parameters.height); //TODO: change to game_size in future
+    glutInitWindowSize(settings.parameters.width, settings.parameters.height);
     glutInitWindowPosition(settings.parameters.width / 2, settings.parameters.height / 2);
     glutCreateWindow("MINESWEEPER GAME");
    

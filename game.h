@@ -13,6 +13,8 @@
 #include <string.h>
 #include <math.h>
 #include <stdbool.h>
+#include <time.h>
+
 
 // MARK: - Mine Cell struct
 
