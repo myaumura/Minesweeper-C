@@ -27,7 +27,7 @@ void show_mines_count(int);
 void draw_mine(void);
 void draw_flag(void);
 void draw_gamefield(void);
-void show_game(void);
+void show_game(mine_cell **, int, int);
 void touch_to_open_cell(int, int, int, int);
 void opening_cells(void);
 

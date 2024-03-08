@@ -11,7 +11,7 @@ extern mine_cell **map_matrix;
 game_settings settings;
 game_difficult difficult;
 
-bool new_game_tapped = false;
+bool new_game_started = false;
 
 // MARK: - Func to show mines count
 
@@ -56,12 +56,25 @@ void show_mines_count(int a) {
 // MARK: - Draw a mine
 
 void draw_mine(void) { // TODO: Redraw a mine
+    glBegin(GL_QUADS);
+    glColor3f(1.0, 0, 0);
+    glVertex2f(0.0, 0.0);
+    glVertex2f(1.0, 0.0);
+    glVertex2f(1.0, 1.0);
+    glVertex2f(0.0, 1.0);
+    glEnd();
+    // Рисуем многоугольную мину
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(0, 0, 0);
-    glVertex2f(0.3, 0.3);
-    glVertex2f(0.7, 0.3);
-    glVertex2f(0.7, 0.7);
-    glVertex2f(0.3, 0.7);
+    glColor3f(0, 0, 0); // черный цвет
+    glVertex2f(0.5, 0.5); // центр мины
+    
+    int sides = 8; // количество сторон многоугольника
+    for (int i = 0; i <= sides; ++i) {
+        float angle = i * (2 * M_PI / sides);
+        float x = 0.5 + 0.2 * cos(angle);
+        float y = 0.5 + 0.2 * sin(angle);
+        glVertex2f(x, y);
+    }
     glEnd();
 }
 
@@ -115,13 +128,13 @@ void draw_open_gamefield(void) {
 void touch_to_open_cell(int button, int state, int x, int y) {
     int map_row = settings.parameters.map_row;
     int map_column = settings.parameters.map_column;
-    // Convert mouse coordinates to cell coordinates (assuming each cell is 10x10 pixels)
+    // Convert mouse coordinates to cell coordinates
     int cell_x = x / (float)glutGet(GLUT_WINDOW_WIDTH) * map_row;
     int cell_y = map_row - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * map_column; // Invert y-coordinate because OpenGL origin is at bottom-left
     
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         
-        if (cell_in_map(cell_x, cell_y)) {
+        if (cell_in_map(cell_x, cell_y, map_row, map_column)) {
             if (map_matrix[cell_x][cell_y].flag == false) {
                 map_matrix[cell_x][cell_y].open = true;
                 if (map_matrix[cell_x][cell_y].mine == true) {
@@ -129,11 +142,10 @@ void touch_to_open_cell(int button, int state, int x, int y) {
                 }
             }
         }
-        // Print out the cell coordinates
         printf("Clicked left button on cell (%d, %d)\n", cell_x, cell_y);
-       
+        
     } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
-        if (cell_in_map(cell_x, cell_y)) { // TODO: - need to create clean flag
+        if (cell_in_map(cell_x, cell_y, map_row, map_column)) { // TODO: - need to create clean flag
             if (map_matrix[cell_x][cell_y].open == false) {
                 if (map_matrix[cell_x][cell_y].flag == true) {
                     map_matrix[cell_x][cell_y].flag = false;
@@ -142,10 +154,9 @@ void touch_to_open_cell(int button, int state, int x, int y) {
                 }
             }
         }
-        // Print out the cell coordinates
         printf("Clicked right button on cell (%d, %d)\n", cell_x, cell_y);
     }
-    glutPostRedisplay(); // request for refresh screen
+    glutPostRedisplay();
 }
 
 // MARK: - Open a cell
@@ -156,12 +167,12 @@ void opening_cells(void) {
 
 // MARK: - Show a game
 
-void show_game(void) {
-    int map_row = settings.parameters.map_row;
-    int map_column = settings.parameters.map_column;
+void show_game(mine_cell **map_matrix, int map_row, int map_column) {
     glLoadIdentity();
     glScalef(2.0 / map_row, 2.0 / map_column, 1); // scale of cell
     glTranslatef(-map_row * 0.5, -map_column * 0.5, 0); // set to bottom left anchor
+    
+    printf("Game size map row %d and column %d\n", map_row, map_column);
     
     for (int i = 0; i < map_column; i++) {
         for (int j = 0; j < map_row; j++) {
@@ -190,22 +201,24 @@ void show_game(void) {
 // MARK: - Scene lifecycle
 
 void display(void) {
-    glClearColor(0.07f, 0.13f, 0.17f, 0.0f); // set background color
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set background color
     glClear(GL_COLOR_BUFFER_BIT); //clear that color
     glFlush();
     
-    if (new_game_tapped == true) {
-        show_game();
+    if (new_game_started == true) { // если в меню выбрана кнопка новая игра
+        int map_row = settings.parameters.map_row;
+        int map_column = settings.parameters.map_column;
+        show_game(map_matrix, map_row, map_column);
+        glutDisplayFunc(display);
         glFlush();
         glutSwapBuffers();
     }
-    
 }
-    
+
 // MARK: - Resize window
 
 void reshape(int width, int height) {
-
+    
 }
 
 // MARK: - Menu characterictics
@@ -247,24 +260,21 @@ void sub_menu(int value) {
             printf("HARDCORE\n");
             break;
     }
-    game_settings settings = setup_settings(difficult);
     
-    // Изменение размеров окна
+    settings = setup_settings(difficult);
+    
+    setup_matrix(&settings);
     glutReshapeWindow(settings.parameters.width, settings.parameters.height);
     
-    setup_matrix();
-    
-    new_game_tapped = true;
+    new_game_started = true;
     printf("New Game button tapped\n");
-
+    
     glutPostRedisplay();
 }
-
 
 // MARK: - Create menu
 
 void create_menu(void) {
-    
     // setting for sub menu
     int sub = glutCreateMenu(sub_menu);
     glutAddMenuEntry("Easy", 0);
@@ -287,7 +297,7 @@ void create_menu(void) {
 game_settings setup_settings(game_difficult difficult) {
     game_settings settings;
     
-    switch (difficult) { // TODO: Need to create how to resize map size
+    switch (difficult) {
         case EASY:
             settings.parameters.width = 400;
             settings.parameters.height = 400;
@@ -331,9 +341,9 @@ void create_window(void) {
     glutInitWindowSize(settings.parameters.width, settings.parameters.height);
     glutInitWindowPosition(settings.parameters.width / 2, settings.parameters.height / 2);
     glutCreateWindow("MINESWEEPER GAME");
-   
+    
     create_menu();
-    setup_matrix();
+    setup_matrix(&settings);
     opening_cells();
     glutDisplayFunc(display);
     glutMainLoop();

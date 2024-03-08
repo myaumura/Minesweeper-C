@@ -48,9 +48,11 @@ typedef struct {
     };
 } game_settings;
 
+// MARK: - Game logic
+
 void new_game(void);
-bool cell_in_map(int x, int y);
-void setup_matrix(void);
-void new_game_matrix(void);
+void setup_matrix(game_settings*);
+void new_game_matrix(int, int, int);
+bool cell_in_map(int, int, int, int);
 
 #endif /* game_h */

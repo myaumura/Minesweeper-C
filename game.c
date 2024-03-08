@@ -7,14 +7,13 @@
 
 #include "game.h"
 
-extern game_settings settings;
-
 int closed_cells;
 mine_cell **map_matrix;
 
-void setup_matrix(void) {
-    int map_row = settings.parameters.map_row;
-    int map_column = settings.parameters.map_column;
+void setup_matrix(game_settings *settings) {
+    int map_row = settings->parameters.map_row;
+    int map_column = settings->parameters.map_column;
+    int mines = settings->parameters.mines;
 
     map_matrix = (mine_cell**)malloc(map_row * sizeof(mine_cell*));
 
@@ -30,28 +29,26 @@ void setup_matrix(void) {
             map_matrix[i][j].open = false;
         }
     }
-    new_game_matrix();
+    new_game_matrix(map_row, map_column, mines);
 }
 
-void new_game_matrix(void) {
-    int map_row = settings.parameters.map_row;
-    int map_column = settings.parameters.map_column;
+void new_game_matrix(int map_row, int map_column, int mines) {
     
     closed_cells = map_row * map_column;
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
     
-    for (int i = 0; i < settings.parameters.mines; i++) {
-        int x = rand() % map_row; //TODO: refactor this logic, because mines not changed
+    for (int i = 0; i < mines; i++) {
+        int x = rand() % map_row;
         int y = rand() % map_column;
         
         if (map_matrix[x][y].mine) {
             i--;
         } else {
-            map_matrix[x][y].mine = true; // установка мины
+            map_matrix[x][y].mine = true;
             
             for (int dx = -1; dx < 2; dx++) {
                 for (int dy = -1; dy < 2; dy++) {
-                    if (cell_in_map(x + dx, y + dy)) {
+                    if (cell_in_map(x + dx, y + dy, map_row, map_column)) {
                         map_matrix[x + dx][y + dy].count_near_mines += 1;
                     }
                 }
@@ -60,6 +57,6 @@ void new_game_matrix(void) {
     }
 }
 
-bool cell_in_map(int x, int y) {
-    return (x >= 0) && (y >= 0) && (x < settings.parameters.map_row) && (y < settings.parameters.map_column);
+bool cell_in_map(int x, int y, int map_row, int map_column) {
+    return (x >= 0) && (y >= 0) && (x < map_row) && (y < map_column);
 }
