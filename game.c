@@ -10,10 +10,12 @@
 int closed_cells;
 mine_cell **map_matrix;
 
+// MARK: - Init matrix
+
 void setup_matrix(game_settings *settings) {
-    int map_row = settings->parameters.map_row;
-    int map_column = settings->parameters.map_column;
-    int mines = settings->parameters.mines;
+    int map_row = settings->map_row;
+    int map_column = settings->map_column;
+    int mines = settings->mines;
 
     map_matrix = (mine_cell**)malloc(map_row * sizeof(mine_cell*));
 
@@ -31,6 +33,8 @@ void setup_matrix(game_settings *settings) {
     }
     new_game_matrix(map_row, map_column, mines);
 }
+
+// MARK: - Setup a new game
 
 void new_game_matrix(int map_row, int map_column, int mines) {
     
@@ -56,6 +60,8 @@ void new_game_matrix(int map_row, int map_column, int mines) {
         }
     }
 }
+
+// MARK: - Check cell in matrix
 
 bool cell_in_map(int x, int y, int map_row, int map_column) {
     return (x >= 0) && (y >= 0) && (x < map_row) && (y < map_column);

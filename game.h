@@ -37,15 +37,11 @@ typedef enum {
 // MARK: - Game settings
 
 typedef struct {
-    union {
-        struct {
-            int width;
-            int height;
-            int map_row;
-            int map_column;
-            int mines;
-        } parameters;
-    };
+    int width;
+    int height;
+    int map_row;
+    int map_column;
+    int mines;
 } game_settings;
 
 // MARK: - Game logic

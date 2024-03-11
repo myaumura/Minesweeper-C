@@ -8,10 +8,13 @@
 #include "setup_ui.h"
 
 extern mine_cell **map_matrix;
+extern int closed_cells;
 game_settings settings;
 game_difficult difficult;
 
+// MARK: - Flags
 bool new_game_started = false;
+bool lose_game = false;
 
 // MARK: - Func to show mines count
 
@@ -57,10 +60,13 @@ void show_mines_count(int a) {
 
 void draw_mine(void) { // TODO: Redraw a mine
     glBegin(GL_QUADS);
-    glColor3f(1.0, 0, 0);
+    glColor3f(0.9, 0.15, 0.15);
     glVertex2f(0.0, 0.0);
+    glColor3f(0.5, 0.15, 0.15);
     glVertex2f(1.0, 0.0);
+    glColor3f(0.9, 0.15, 0.15);
     glVertex2f(1.0, 1.0);
+    glColor3f(1.0, 0.15, 0.15);
     glVertex2f(0.0, 1.0);
     glEnd();
     // Рисуем многоугольную мину
@@ -123,38 +129,47 @@ void draw_open_gamefield(void) {
     glEnd();
 }
 
+// MARK: - Open a several fields
+
+void open_fields(int x, int y, int map_row, int map_column) {
+    if (!cell_in_map(x, y, map_row, map_column) == true || map_matrix[x][y].open == true) return;
+    
+    map_matrix[x][y].open = true;
+    closed_cells--;
+    
+    if (map_matrix[x][y].count_near_mines == 0) {
+        for (int dx = -1; dx < 2; dx++) {
+            for (int dy = -1; dy < 2; dy++) {
+                open_fields(x+dx, y+dy, map_row, map_column);
+            }
+        }
+    } else if (map_matrix[x][y].mine == true) {
+        lose_game = true;
+        for (int i = 0; i < map_row; i++) {
+            for (int j = 0; j < map_column; j++) {
+                map_matrix[i][j].open = true;
+            }
+        }
+    }
+}
+
 // MARK: - Get mouse click to open a cell
 
 void touch_to_open_cell(int button, int state, int x, int y) {
-    int map_row = settings.parameters.map_row;
-    int map_column = settings.parameters.map_column;
+    int map_row = settings.map_row;
+    int map_column = settings.map_column;
     // Convert mouse coordinates to cell coordinates
     int cell_x = x / (float)glutGet(GLUT_WINDOW_WIDTH) * map_row;
     int cell_y = map_row - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * map_column; // Invert y-coordinate because OpenGL origin is at bottom-left
     
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        
-        if (cell_in_map(cell_x, cell_y, map_row, map_column)) {
-            if (map_matrix[cell_x][cell_y].flag == false) {
-                map_matrix[cell_x][cell_y].open = true;
-                if (map_matrix[cell_x][cell_y].mine == true) {
-                    printf("YOU ARE A LOSER!!!\n");
-                }
-            }
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && cell_in_map(cell_x, cell_y, map_row, map_column) && map_matrix[cell_x][cell_y].flag == false) {
+        open_fields(cell_x,cell_y, map_row, map_column);
+    } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN && cell_in_map(cell_x, cell_y, map_row, map_column)) {
+        if (map_matrix[cell_x][cell_y].open == false && map_matrix[cell_x][cell_y].flag == true) {
+            map_matrix[cell_x][cell_y].flag = false;
+        } else {
+            map_matrix[cell_x][cell_y].flag = true;
         }
-        printf("Clicked left button on cell (%d, %d)\n", cell_x, cell_y);
-        
-    } else if (button == GLUT_MIDDLE_BUTTON && state == GLUT_DOWN) {
-        if (cell_in_map(cell_x, cell_y, map_row, map_column)) { // TODO: - need to create clean flag
-            if (map_matrix[cell_x][cell_y].open == false) {
-                if (map_matrix[cell_x][cell_y].flag == true) {
-                    map_matrix[cell_x][cell_y].flag = false;
-                } else {
-                    map_matrix[cell_x][cell_y].flag = true;
-                }
-            }
-        }
-        printf("Clicked right button on cell (%d, %d)\n", cell_x, cell_y);
     }
     glutPostRedisplay();
 }
@@ -171,8 +186,6 @@ void show_game(mine_cell **map_matrix, int map_row, int map_column) {
     glLoadIdentity();
     glScalef(2.0 / map_row, 2.0 / map_column, 1); // scale of cell
     glTranslatef(-map_row * 0.5, -map_column * 0.5, 0); // set to bottom left anchor
-    
-    printf("Game size map row %d and column %d\n", map_row, map_column);
     
     for (int i = 0; i < map_column; i++) {
         for (int j = 0; j < map_row; j++) {
@@ -206,35 +219,33 @@ void display(void) {
     glFlush();
     
     if (new_game_started == true) { // если в меню выбрана кнопка новая игра
-        int map_row = settings.parameters.map_row;
-        int map_column = settings.parameters.map_column;
+        lose_game = false;
+        int map_row = settings.map_row;
+        int map_column = settings.map_column;
+        if (closed_cells == settings.mines) {
+            printf("You win\n");
+        }
         show_game(map_matrix, map_row, map_column);
-        glutDisplayFunc(display);
         glFlush();
         glutSwapBuffers();
     }
-}
-
-// MARK: - Resize window
-
-void reshape(int width, int height) {
-    
 }
 
 // MARK: - Menu characterictics
 
 void menu(int value) {
     switch (value) {
-        case 1:
-            printf("Continue button tapped\n");
-            glColor3f(0.0, 1.0, 0.0);
+        case 4: // Continue game
             break;
-        case 2:
-            printf("Records button tapped\n");
-            glColor3f(0.0, 0.0, 1.0);
+        case 5: // Save game
             break;
-        case 3:
-            printf("Exit button tapped\n");
+        case 6:
+            break; //Hint
+        case 7:
+            printf("h\n");
+            break; // Records
+        case 8:
+            printf("Exit\n");
             exit(0);
             break;
     }
@@ -245,30 +256,22 @@ void sub_menu(int value) {
     switch (value) {
         case 0:
             difficult = EASY;
-            printf("EASY\n");
             break;
         case 1:
             difficult = MEDIUM;
-            printf("MEDIUM\n");
             break;
         case 2:
             difficult = HARD;
-            printf("HARD\n");
             break;
         case 3:
             difficult = HARDCORE;
-            printf("HARDCORE\n");
             break;
     }
     
     settings = setup_settings(difficult);
-    
     setup_matrix(&settings);
-    glutReshapeWindow(settings.parameters.width, settings.parameters.height);
-    
+    glutReshapeWindow(settings.width, settings.height);
     new_game_started = true;
-    printf("New Game button tapped\n");
-    
     glutPostRedisplay();
 }
 
@@ -286,9 +289,11 @@ void create_menu(void) {
     // main menu
     glutCreateMenu(menu);
     glutAddSubMenu("New Game", sub);
-    glutAddMenuEntry("Continue Game", 5);
-    glutAddMenuEntry("Records", 6);
-    glutAddMenuEntry("Exit", 7);
+    glutAddMenuEntry("Continue Game", 4);
+    glutAddMenuEntry("Save Game", 5);
+    glutAddMenuEntry("Hint", 6);
+    glutAddMenuEntry("Records", 7);
+    glutAddMenuEntry("Exit", 8);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
@@ -299,32 +304,32 @@ game_settings setup_settings(game_difficult difficult) {
     
     switch (difficult) {
         case EASY:
-            settings.parameters.width = 400;
-            settings.parameters.height = 400;
-            settings.parameters.mines = 10;
-            settings.parameters.map_row = 8;
-            settings.parameters.map_column = 8;
+            settings.width = 400;
+            settings.height = 400;
+            settings.mines = 10;
+            settings.map_row = 8;
+            settings.map_column = 8;
             break;
         case MEDIUM:
-            settings.parameters.width = 700;
-            settings.parameters.height = 700;
-            settings.parameters.mines = 40;
-            settings.parameters.map_row = 16;
-            settings.parameters.map_column = 16;
+            settings.width = 700;
+            settings.height = 700;
+            settings.mines = 40;
+            settings.map_row = 16;
+            settings.map_column = 16;
             break;
         case HARD:
-            settings.parameters.width = 1000;
-            settings.parameters.height = 800;
-            settings.parameters.mines = 99;
-            settings.parameters.map_row = 20;
-            settings.parameters.map_column = 20;
+            settings.width = 1000;
+            settings.height = 800;
+            settings.mines = 99;
+            settings.map_row = 20;
+            settings.map_column = 20;
             break;
         case HARDCORE:
-            settings.parameters.width = 1000;
-            settings.parameters.height = 1000;
-            settings.parameters.mines = 1200;
-            settings.parameters.map_row = 40;
-            settings.parameters.map_column = 40;
+            settings.width = 1000;
+            settings.height = 1000;
+            settings.mines = 1200;
+            settings.map_row = 40;
+            settings.map_column = 40;
             break;
     }
     return settings;
@@ -338,8 +343,7 @@ void create_window(void) {
     
     settings = setup_settings(difficult);
     
-    glutInitWindowSize(settings.parameters.width, settings.parameters.height);
-    glutInitWindowPosition(settings.parameters.width / 2, settings.parameters.height / 2);
+    glutInitWindowSize(settings.width, settings.height);
     glutCreateWindow("MINESWEEPER GAME");
     
     create_menu();

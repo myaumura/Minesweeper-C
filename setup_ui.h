@@ -8,12 +8,6 @@
 #ifndef setup_ui_h
 #define setup_ui_h
 
-// Standart libraries for C
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-
 // Libraries for interface
 #define GL_SILENCE_DEPRECATION
 #include <GLUT/glut.h>
@@ -27,6 +21,7 @@ void show_mines_count(int);
 void draw_mine(void);
 void draw_flag(void);
 void draw_gamefield(void);
+void open_fields(int, int, int, int);
 void show_game(mine_cell **, int, int);
 void touch_to_open_cell(int, int, int, int);
 void opening_cells(void);
