@@ -14,6 +14,8 @@
 
 // Local files
 #include "game.h"
+#include "records.h"
+#include "savings.h"
 
 // MARK: - Interface functions
 

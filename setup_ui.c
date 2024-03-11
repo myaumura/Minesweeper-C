@@ -13,6 +13,7 @@ game_settings settings;
 game_difficult difficult;
 
 // MARK: - Flags
+
 bool new_game_started = false;
 bool lose_game = false;
 
@@ -184,8 +185,8 @@ void opening_cells(void) {
 
 void show_game(mine_cell **map_matrix, int map_row, int map_column) {
     glLoadIdentity();
-    glScalef(2.0 / map_row, 2.0 / map_column, 1); // scale of cell
-    glTranslatef(-map_row * 0.5, -map_column * 0.5, 0); // set to bottom left anchor
+    glScalef(2.0 / map_row, 2.0 / map_column, 1);
+    glTranslatef(-map_row * 0.5, -map_column * 0.5, 0);
     
     for (int i = 0; i < map_column; i++) {
         for (int j = 0; j < map_row; j++) {
@@ -214,16 +215,17 @@ void show_game(mine_cell **map_matrix, int map_row, int map_column) {
 // MARK: - Scene lifecycle
 
 void display(void) {
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set background color
-    glClear(GL_COLOR_BUFFER_BIT); //clear that color
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
     
-    if (new_game_started == true) { // если в меню выбрана кнопка новая игра
+    if (new_game_started == true) {
         lose_game = false;
         int map_row = settings.map_row;
         int map_column = settings.map_column;
         if (closed_cells == settings.mines) {
             printf("You win\n");
+            save_record();
         }
         show_game(map_matrix, map_row, map_column);
         glFlush();
@@ -235,17 +237,17 @@ void display(void) {
 
 void menu(int value) {
     switch (value) {
-        case 4: // Continue game
+        case 4:
+            continue_game();
             break;
         case 5: // Save game
+            save_game();
             break;
         case 6:
             break; //Hint
         case 7:
-            printf("h\n");
             break; // Records
         case 8:
-            printf("Exit\n");
             exit(0);
             break;
     }
@@ -278,7 +280,7 @@ void sub_menu(int value) {
 // MARK: - Create menu
 
 void create_menu(void) {
-    // setting for sub menu
+    
     int sub = glutCreateMenu(sub_menu);
     glutAddMenuEntry("Easy", 0);
     glutAddMenuEntry("Medium", 1);
@@ -286,7 +288,6 @@ void create_menu(void) {
     glutAddMenuEntry("Hardcore", 3);
     glutCreateMenu(sub_menu);
     
-    // main menu
     glutCreateMenu(menu);
     glutAddSubMenu("New Game", sub);
     glutAddMenuEntry("Continue Game", 4);
@@ -311,14 +312,14 @@ game_settings setup_settings(game_difficult difficult) {
             settings.map_column = 8;
             break;
         case MEDIUM:
-            settings.width = 700;
-            settings.height = 700;
+            settings.width = 800;
+            settings.height = 800;
             settings.mines = 40;
             settings.map_row = 16;
             settings.map_column = 16;
             break;
         case HARD:
-            settings.width = 1000;
+            settings.width = 800;
             settings.height = 800;
             settings.mines = 99;
             settings.map_row = 20;
@@ -326,10 +327,10 @@ game_settings setup_settings(game_difficult difficult) {
             break;
         case HARDCORE:
             settings.width = 1000;
-            settings.height = 1000;
-            settings.mines = 1200;
-            settings.map_row = 40;
-            settings.map_column = 40;
+            settings.height = 800;
+            settings.mines = 288;
+            settings.map_row = 24;
+            settings.map_column = 24;
             break;
     }
     return settings;
