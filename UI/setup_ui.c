@@ -15,7 +15,10 @@ game_difficult difficult;
 // MARK: - Flags
 
 bool new_game_started = false;
+bool game_continue_flag = false;
 bool lose_game = false;
+bool hint_tapped = false;
+bool solution_tapped = false;
 
 // MARK: - Func to show mines count
 
@@ -70,12 +73,11 @@ void draw_mine(void) { // TODO: Redraw a mine
     glColor3f(1.0, 0.15, 0.15);
     glVertex2f(0.0, 1.0);
     glEnd();
-    // Рисуем многоугольную мину
     glBegin(GL_TRIANGLE_FAN);
-    glColor3f(0, 0, 0); // черный цвет
-    glVertex2f(0.5, 0.5); // центр мины
+    glColor3f(0, 0, 0);
+    glVertex2f(0.5, 0.5);
     
-    int sides = 8; // количество сторон многоугольника
+    int sides = 8;
     for (int i = 0; i <= sides; ++i) {
         float angle = i * (2 * M_PI / sides);
         float x = 0.5 + 0.2 * cos(angle);
@@ -152,6 +154,7 @@ void open_fields(int x, int y, int map_row, int map_column) {
             }
         }
     }
+    glutPostRedisplay();
 }
 
 // MARK: - Get mouse click to open a cell
@@ -159,9 +162,8 @@ void open_fields(int x, int y, int map_row, int map_column) {
 void touch_to_open_cell(int button, int state, int x, int y) {
     int map_row = settings.map_row;
     int map_column = settings.map_column;
-    // Convert mouse coordinates to cell coordinates
     int cell_x = x / (float)glutGet(GLUT_WINDOW_WIDTH) * map_row;
-    int cell_y = map_row - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * map_column; // Invert y-coordinate because OpenGL origin is at bottom-left
+    int cell_y = map_row - y / (float)glutGet(GLUT_WINDOW_HEIGHT) * map_column;
     
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && cell_in_map(cell_x, cell_y, map_row, map_column) && map_matrix[cell_x][cell_y].flag == false) {
         open_fields(cell_x,cell_y, map_row, map_column);
@@ -219,18 +221,47 @@ void display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
     glFlush();
     
+    int map_row = settings.map_row;
+    int map_column = settings.map_column;
+    
     if (new_game_started == true) {
         lose_game = false;
-        int map_row = settings.map_row;
-        int map_column = settings.map_column;
         if (closed_cells == settings.mines) {
-            printf("You win\n");
-            save_record();
         }
         show_game(map_matrix, map_row, map_column);
         glFlush();
         glutSwapBuffers();
+    } else if (game_continue_flag == true) {
+        lose_game = false;
+        glutReshapeFunc(on_resize);
+        show_game(map_matrix, map_row, map_column);
+        glFlush();
+        glutSwapBuffers();
     }
+}
+
+void on_resize(int w, int h) {
+    settings.width = w;
+    settings.height = h;
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-w / 2, w / 2, -h / 2, h / 2, -1, 1);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    display(); // refresh window.
+}
+
+void display_win(void) {
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glLoadIdentity();
+    
+    char *message = "Congratulations!";
+    for (int i = 0; i < strlen(message); i++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, message[i]);
+    }
+    glFlush();
 }
 
 // MARK: - Menu characterictics
@@ -239,15 +270,22 @@ void menu(int value) {
     switch (value) {
         case 4:
             continue_game();
+            glutInitWindowSize(settings.width, settings.height);
+            game_continue_flag = true;
             break;
         case 5: // Save game
             save_game();
             break;
         case 6:
-            break; //Hint
+            make_move(settings.map_row, settings.map_column, map_matrix);
+            break;
         case 7:
-            break; // Records
+//            solution();
+            break;
         case 8:
+            //            read_records();
+            break;
+        case 9:
             exit(0);
             break;
     }
@@ -293,8 +331,9 @@ void create_menu(void) {
     glutAddMenuEntry("Continue Game", 4);
     glutAddMenuEntry("Save Game", 5);
     glutAddMenuEntry("Hint", 6);
-    glutAddMenuEntry("Records", 7);
-    glutAddMenuEntry("Exit", 8);
+    glutAddMenuEntry("Solution", 7);
+    glutAddMenuEntry("Records", 8);
+    glutAddMenuEntry("Exit", 9);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
@@ -339,7 +378,6 @@ game_settings setup_settings(game_difficult difficult) {
 // MARK: - Create a OpenGL window
 
 void create_window(void) {
-    
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
     
     settings = setup_settings(difficult);
@@ -352,4 +390,82 @@ void create_window(void) {
     opening_cells();
     glutDisplayFunc(display);
     glutMainLoop();
+}
+
+float mine_probability(int x, int y, int map_row, int map_column, mine_cell **map_matrix) {
+    int mines_count = 0;
+    int closed_count = 0;
+    
+    for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+            int nx = x + dx;
+            int ny = y + dy;
+            
+            if (nx >= 0 && nx < map_row && ny >= 0 && ny < map_column && (dx != 0 || dy != 0)) {
+                if (map_matrix[nx][ny].mine) {
+                    mines_count++;
+                }
+                if (!map_matrix[nx][ny].open) {
+                    closed_count++;
+                }
+            }
+        }
+    }
+    
+    if (closed_count > 0) {
+        return (float)mines_count / closed_count;
+    }
+    
+    return 0;
+}
+
+void find_least_probable_cell(int *x, int *y, int map_row, int map_column, mine_cell **map_matrix) {
+    float min_probability = 1;
+    int least_probable_cells[100][2];
+    int least_probable_count = 0;
+    
+    for (int i = 0; i < map_row; i++) {
+        for (int j = 0; j < map_column; j++) {
+            if (!map_matrix[i][j].open) {
+                float probability = mine_probability(i, j, map_row, map_column, map_matrix);
+                if (probability < min_probability) {
+                    min_probability = probability;
+                    least_probable_count = 0;
+                }
+                if (probability == min_probability) {
+                    least_probable_cells[least_probable_count][0] = i;
+                    least_probable_cells[least_probable_count][1] = j;
+                    least_probable_count++;
+                }
+            }
+        }
+    }
+    
+    if (least_probable_count > 0) {
+        int index = rand() % least_probable_count;
+        *x = least_probable_cells[index][0];
+        *y = least_probable_cells[index][1];
+    }
+}
+
+void make_move(int map_row, int map_column, mine_cell **map_matrix) {
+    int x, y;
+    find_least_probable_cell(&x, &y, map_row, map_column, map_matrix);
+    open_fields(x, y, map_row, map_column);
+    
+    for (int dx = -1; dx <= 1; dx++) {
+        for (int dy = -1; dy <= 1; dy++) {
+            int nx = x + dx;
+            int ny = y + dy;
+            if (nx >= 0 && nx < map_row && ny >= 0 && ny < map_column) {
+                if (!map_matrix[nx][ny].open && !map_matrix[nx][ny].flag) {
+                    float probability = mine_probability(nx, ny, map_row, map_column, map_matrix);
+                    if (probability > 0.5) {
+                        map_matrix[nx][ny].flag = true;
+                    }
+                }
+            }
+        }
+    }
+    glutPostRedisplay();
 }

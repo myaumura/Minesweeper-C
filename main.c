@@ -7,7 +7,6 @@
 
 #include "setup_ui.h"
 
-
 int main(int argc, char** argv) {
     
     glutInit(&argc, argv);

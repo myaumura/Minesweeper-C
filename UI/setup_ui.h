@@ -36,11 +36,23 @@ game_settings setup_settings(game_difficult);
 
 void display(void);
 void reshape(int, int);
+void display_win(void);
+void keyboard(unsigned char, int, int);
 
 void menu(int);
 void sub_menu(int);
+void hint_menu(int);
 void create_menu(void);
 void show_menu(char);
 void create_window(void);
+
+void on_resize(int, int);
+
+float mine_probability(int x, int y, int map_row, int map_column, mine_cell **map_matrix);
+void find_least_probable_cell(int *x, int *y, int map_row, int map_column, mine_cell **map_matrix);
+
+void make_move(int, int, mine_cell **);
+void openUntilLoss(int map_row, int map_column, mine_cell **map_matrix);
+void solution(mine_cell **map_matrix, int map_row, int map_column);
 
 #endif /* setup_ui_h */

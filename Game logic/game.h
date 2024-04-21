@@ -14,7 +14,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <time.h>
-
+#include <unistd.h>
 
 // MARK: - Mine Cell struct
 

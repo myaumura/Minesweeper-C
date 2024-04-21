@@ -27,8 +27,8 @@ void setup_matrix(game_settings *settings) {
         for (int j = 0; j < map_column; j++) {
             map_matrix[i][j].mine = false;
             map_matrix[i][j].flag = false;
-            map_matrix[i][j].count_near_mines = 0;
             map_matrix[i][j].open = false;
+            map_matrix[i][j].count_near_mines = 0;
         }
     }
     new_game_matrix(map_row, map_column, mines);
