@@ -9,9 +9,9 @@
 
 
 int main(int argc, char** argv) {
-    
+
     glutInit(&argc, argv);
     create_window();
-    
+
     return EXIT_SUCCESS;
 }
